@@ -19,21 +19,29 @@ LEFT JOIN (SELECT per_clu_no, COUNT(per_no) AS total_per FROM heg_personne GROUP
 LEFT JOIN (SELECT com_clu_no, COUNT(com_no) AS total_com FROM heg_competition GROUP BY com_clu_no) ON clu_no = com_clu_no;
 
 -- 4) Conservez pour chaque club la fédération à laquelle il est affilié
-ALTER TABLE heg_club ADD clu_federation VARCHAR2(36);
+CREATE TABLE heg_federation (
+    fed_no      NUMBER(5) CONSTRAINT pk_heg_federation PRIMARY KEY,
+	fed_nom     VARCHAR2(36) CONSTRAINT nn_fed_nom NOT NULL
+);
+INSERT INTO heg_federation VALUES(1, 'Swiss Athletics');
+INSERT INTO heg_federation VALUES(2, 'ASF (Association Suisse de Football)');
 COMMIT;
 
-UPDATE heg_club SET clu_federation = 'Swiss Athletics' WHERE clu_no IN(1,3);
-UPDATE heg_club SET clu_federation = 'ASF (Association Suisse de Football)' WHERE clu_no = 2;
+ALTER TABLE heg_club ADD (clu_fed_no NUMBER(5) CONSTRAINT fk_clu_fed_no REFERENCES heg_federation(fed_no));
+COMMIT;
+
+UPDATE heg_club SET clu_federation = 1 WHERE clu_no IN(1,3);
+UPDATE heg_club SET clu_federation = 2 WHERE clu_no = 2;
 COMMIT;
 
 -- 5) Insérer le nouveau club « HEG-Footing », affilié également à « Swiss Athletics », ayant comme président « Alain Proviste ». L’email du club est le même que celui de son président (la ville également)
 INSERT INTO heg_club VALUES (
-    7, 
+    (SELECT MAX(clu_no)+1 FROM heg_club), 
     'HEG-Footing',
     (SELECT per_email FROM heg_personne WHERE per_no = 4),
     (SELECT per_ville FROM heg_personne WHERE per_no = 4),
     4, 
-    'Swiss Athletics'
+    1
 );
 COMMIT;
 
